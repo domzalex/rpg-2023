@@ -1,0 +1,158 @@
+<style>
+    *, *::after, *::before {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        image-rendering: pixelated;
+    }
+    body {
+        background-color: black;
+        height: 100vh;
+        width: 100vw;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-family:Verdana, Geneva, Tahoma, sans-serif;
+    }
+    .menu-button {
+        border: solid 3px rgba(0,0,0,0);
+        background: none;
+        padding: 0.12em 0.27em;
+        border-radius: 5px;
+    }
+    .item {
+        border: solid 3px rgba(0,0,0,0);
+        padding: 0.12em 0.27em;
+        border-radius: 5px;
+    }
+    .menu-hovered, .item-hovered {
+        background-color: rgba(0,0,0,0.15);
+        border: solid 3px white;
+    }
+    .battle-menu-item {
+        border: solid 3px transparent;
+        width: 20%;
+        height: 175px;
+        color: rgb(200,200,200);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin: 0 10px;
+    }
+    .battle-menu-hovered {
+        border: solid 5px rgb(200,200,200);
+        background-color: rgb(35,35,35);
+    }
+    #enemy-health::after {
+        display: inline-block;
+        content: '';
+        width: 85px;
+        height: 25px;
+        border: solid 5px white;
+        position: absolute;
+        top: -5px;
+        left: -5px;
+        opacity: 0.5;
+    }
+</style>
+
+<div style="position: relative; display: inline-block">
+    <canvas></canvas>
+
+    <div id="menu" style="display: none; flex-direction: column; justify-content: space-evenly; align-items: center; width: 426px; height: 800px; position: absolute; top: 0; left: 0;">
+    
+        <div id="menu-buttons" style="display: flex; flex-direction: column; justify-content: space-evenly; height: 100%;">
+            <button id="menu-items" class="menu-button menu-hovered" style="font-size: 4em; color: white;">Items</button>
+            <button id="menu-equip" class="menu-button" style="font-size: 4em; color: white;">Equip</button>
+            <button id="menu-save" class="menu-button" style="font-size: 4em; color: white;">Save</button>
+            <h1 id="save-alert" style="color: white; font-size: 2em; opacity: 0;">Game saved!</h1>
+        </div>
+    
+    </div>
+
+    <div id="all-items" style="position: absolute; top: 30px; left: 0; color: white; display: none; justify-content: space-evenly; width: 100%; height: auto;">
+        <div id="potion" class="item item-hovered">
+            <h1>potion</h1>
+            <h2 style="text-align: center;"></h2>
+        </div>
+        <div id="big-potion" class="item">
+            <h1>big-potion</h1>
+            <h2 style="text-align: center;"></h2>
+        </div>
+        <div id="magic-potion" class="item">
+            <h1>magic-potion</h1>
+            <h2 style="text-align: center;"></h2>
+        </div>
+        <div id="big-magic-potion" class="item">
+            <h1>big-magic-potion</h1>
+            <h2 style="text-align: center;"></h2>
+        </div>
+        <div id="antidote" class="item">
+            <h1>antidote</h1>
+            <h2 style="text-align: center;"></h2>
+        </div>
+    </div>
+
+    <div id="player-stats" style="padding-bottom: 30px; color: white; width: 100%; display: none; justify-content: space-evenly; position: absolute; bottom: 0; left: 0;">
+        <div>
+            <h1 id="player-level"></h1>
+            <h1 id="player-exp"></h1>
+            <h1 id="player-health"></h1>
+            <h1 id="player-magic"></h1>
+            <h1 id="player-money"></h1>
+        </div>
+        
+        <div>
+            <h1 id="player-exp-next"></h1>
+            <h1 id="player-atk"></h1>
+            <h1 id="player-def"></h1>
+            <h1 id="player-spd"></h1>
+            <h1 id="player-power"></h1>
+        </div>
+    </div>
+
+    <div id="battle-menu" style="display: none; justify-content: space-evenly; align-items: center; position: absolute; bottom: 0; left: 0; width: 100%; height: 200px; background-color: rgb(25,25,25);">
+        <div class="battle-menu-item battle-menu-hovered">
+            <h1>Attack</h1>
+        </div>
+        <div class="battle-menu-item">
+            <h1>Magic</h1>
+        </div>
+        <div class="battle-menu-item">
+            <h1>Item</h1>
+        </div>
+        <div class="battle-menu-item">
+            <h1>Run</h1>
+        </div>
+        <div id="player-stats-battle" class="battle-menu-item battle-menu-hovered" style="display: flex; flex-direction: column; justify-content: space-between; align-items: center;">
+            <h1>Player Stats</h1>
+            <h1 id="player-health"></h1>
+            <h1 id="player-magic"></h1>
+        </div>
+
+
+        <div id="magic-menu" style="display: none; justify-content: space-evenly; align-items: center; position: absolute; bottom: 0; left: 0; width: 80%; height: 200px; background-color: rgb(40, 40, 40);">
+            <h1 id="fire-magic" class="battle-menu-item battle-menu-hovered">Fire</h1>
+            <h1 id="lightning-magic" class="battle-menu-item">Lightning</h1>
+            <h1 id="wind-magic" class="battle-menu-item">Wind</h1>
+        </div>
+
+
+        <div id="enemy-health" style="height: 15px; background-color: rgb(120,120,120); position: absolute; top: -450px; left: 498px;"></div>
+
+        
+    </div>
+
+    <div id="win-screen" style="color: white; display: none; justify-content: space-evenly; position: absolute; top: 0; left: 0; height: 100%; width: 100%;">
+        <h1>You won!</h1>
+        <h1 id="exp-gain"></h1>
+        <h1 id="money-gain"></h1>
+        <div id="level-up-modal" style="background-color: rgb(30,30,30); color: white; font-size: 2em; display: none; justify-content: center; align-items: center; position: absolute; top: 0; left: 0; text-align: center; height: 100%; width: 100%;"><h1 style="width: 50%;">Congratulations! You gained a new level!</h1></div>
+    </div>
+
+</div>
+
+<script src="data/battleZones.js"></script>
+<script src="data/collisions.js"></script>
+<script src="classes.js"></script>
+<script src="main.js"></script>
