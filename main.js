@@ -8,6 +8,9 @@ let gameState = {
     currentScreen: 0,
     progression: 0
 }
+let currentMap = {
+    bg: './img/map5.png'
+}
 let character = {
     position: {
         x: 590,
@@ -108,14 +111,16 @@ const enemies = {
 }
 
 
+
+
 // Initiates canvas context
 const canvas = document.querySelector('canvas')
 const ctx = canvas.getContext('2d')
 
 // Sets main screen offset for movable background to reference as well as game screen size
 let offset = {
-    x: -825,
-    y: -1875
+    x: 0,
+    y: 0
 }
 canvas.width = 1280
 canvas.height = 800
@@ -150,10 +155,14 @@ let useMagic = false
 
 let pressedKeys = []
 
+let whichCollision = collisions
+
+let collisionsSet = false
+
 
 // General images for overworld, battle scene, menu scene, etc.
-const image = new Image()
-image.src = './img/map5.png'
+let backgroundImage = new Image()
+backgroundImage.src = currentMap.bg
 const flowersImg = new Image()
 flowersImg.src = './img/flowers.png'
 const foregroundImage = new Image()
@@ -180,12 +189,12 @@ const playerRight = new Image()
 playerRight.src = './img/char-right.png'
 
 // Menu item images
-const menuPotionImg = new Image()
-menuPotionImg.src = './img/menu-potion.png'
+// const menuPotionImg = new Image()
+// menuPotionImg.src = './img/menu-potion.png'
 
 
 // Sprite list
-const player = new Sprite({
+let player = new Sprite({
     position: {
         x: canvas.width / 2,
         y: canvas.height / 2
@@ -229,12 +238,12 @@ let enemy = new Sprite({
     exp: 50,
     money: 25
 })
-const background = new Sprite({
+let background = new Sprite({
     position: {
         x: offset.x,
         y: offset.y
     },
-    image: image
+    image: backgroundImage
 })
 let flowers = new Sprite({
     position: {
@@ -278,13 +287,13 @@ const winPane = new Sprite({
     },
     image: winScreenImage
 })
-const menuPotion = new Sprite({
-    position: {
-        x: 50,
-        y: 50
-    },
-    image: menuPotionImg
-})
+// const menuPotion = new Sprite({
+//     position: {
+//         x: 50,
+//         y: 50
+//     },
+//     image: menuPotionImg
+// })
 const keys = {
     w: {
         pressed: false
@@ -308,7 +317,7 @@ const keys = {
         pressed: false
     }
 }
-let spd = 5
+let spd = 10
 
 
 function moveFlowers() {
@@ -334,26 +343,57 @@ function rectangleCollision({ rectangle1, rectangle2 }) {
     )
 }
 // Generates collision maps for overworld
-const collisionsMap = []
-for (let i = 0; i < collisions.length; i+= 80) {
-    collisionsMap.push(collisions.slice(i, 80 + i))
+let collisionsMap = []
+function createCollisions(setCollisionMap) {
+    if (!collisionsSet) {
+        collisionsMap = []
+        for (let i = 0; i < setCollisionMap.length; i+= 80) {
+            collisionsMap.push(setCollisionMap.slice(i, 80 + i))
+        }
+        createBoundaries()
+    }
 }
 // const battleZonesMap = []
 // for (let i = 0; i < battleZonesData.length; i+= 80) {
 //     battleZonesMap.push(battleZonesData.slice(i, 80 + i))
 // }
 // Populates overworld collision maps
-const boundaries = []
-collisionsMap.forEach((row, i) => {
-    row.forEach(((symbol, j) => {
-        if (symbol === 59) {
-            boundaries.push(new Boundary({position: {
-                x: j * Boundary.width + (offset.x + 30),
-                y: i * Boundary.height + (offset.y + 60)
-            }}))
+let boundaries = []
+function createBoundaries() {
+    boundaries = []
+    collisionsMap.forEach((row, i) => {
+        row.forEach(((symbol, j) => {
+            if (symbol === 59) {
+                boundaries.push(new Boundary({position: {
+                    x: j * Boundary.width + (0 + 30),
+                    y: i * Boundary.height + (0 + 85)
+                }}))
+            }
+        }))
+    })
+    console.log(boundaries)
+}
+
+
+
+function checkCollisionChange() {
+    if (!collisionsSet) {
+        console.log('peepee')
+        switch (whichCollision) {
+            case collisions :
+                createCollisions(collisions)
+                console.log('main map')
+                collisionsSet = true
+                break
+
+            case secretForestCollisions :
+                createCollisions(secretForestCollisions)
+                console.log('forest map')
+                collisionsSet = true
+                break
         }
-    }))
-})
+    }
+}
 // const battleZones = []
 // battleZonesMap.forEach((row, i) => {
 //     row.forEach(((symbol, j) => {
@@ -367,7 +407,7 @@ collisionsMap.forEach((row, i) => {
 // })
 
 // All elements that are moved
-const movables = [background, flowers, ...boundaries, foreground, ]
+let movables = [background, flowers, ...boundaries, foreground]
 
 
 // Functions to create and read save files
@@ -396,6 +436,29 @@ const battle = {
     initiated: false
 }
 function animate() {
+
+    if ((offset.y > -355) && (offset.x >= -4185 && offset.x <= -4055)) {
+        collisionsSet = false
+        whichCollision = secretForestCollisions
+
+        checkCollisionChange()
+
+        foregroundImage.src = './img/secret-forest-top.png'
+        backgroundImage.src = './img/secret-forest.png'
+        offset.x = 0
+        offset.y = 0
+        background.position.x = offset.x
+        background.position.y = offset.y
+        foreground.position.x = offset.x
+        foreground.position.y = offset.y
+
+        player.image = playerUp
+    }
+
+    checkCollisionChange()
+    movables = [background, flowers, ...boundaries, foreground]
+
+
 
     // if (keyFiredShift) {
     //     spd = 10
@@ -1432,6 +1495,14 @@ window.addEventListener('keyup', (e) => {
     }
 
 })
+
+// window.addEventListener('keypress', (e) => {
+//     if (e.key === 'm') {
+        
+        
+        
+//     }
+// })
 
 
 // Run main game loop
