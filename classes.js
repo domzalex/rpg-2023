@@ -66,7 +66,20 @@ class Boundary {
         this.height = 20
     }
     draw() {
-        ctx.fillStyle = 'rgba(255,0,0,0.3)'
+        ctx.fillStyle = 'rgba(255,0,0,0.0)'
+        ctx.fillRect(this.position.x, this.position.y, this.width, this.height)
+    }
+}
+class BattleZone {
+    static width = 80
+    static height = 80
+    constructor({position}) {
+        this.position = position
+        this.width = 80
+        this.height = 80
+    }
+    draw() {
+        ctx.fillStyle = 'rgba(255,0,0,0.0)'
         ctx.fillRect(this.position.x, this.position.y, this.width, this.height)
     }
 }

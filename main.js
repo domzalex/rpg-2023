@@ -119,8 +119,8 @@ const ctx = canvas.getContext('2d')
 
 // Sets main screen offset for movable background to reference as well as game screen size
 let offset = {
-    x: 0,
-    y: 0
+    x: -4100,
+    y: -570
 }
 canvas.width = 1280
 canvas.height = 800
@@ -133,6 +133,7 @@ let itemOpen = false
 let itemIndex = 0
 let battleMenuIndex = 0
 let battleEnd = false
+let battleMessage = document.querySelector('#battle-message')
 let allowBattleMenuNav = false
 let magicMenuOpen = false
 let magicMenuIndex = 0
@@ -156,7 +157,6 @@ let useMagic = false
 let pressedKeys = []
 
 let whichCollision = collisions
-
 let collisionsSet = false
 
 
@@ -188,11 +188,6 @@ playerLeft.src = './img/char-left.png'
 const playerRight = new Image()
 playerRight.src = './img/char-right.png'
 
-// Menu item images
-// const menuPotionImg = new Image()
-// menuPotionImg.src = './img/menu-potion.png'
-
-
 // Sprite list
 let player = new Sprite({
     position: {
@@ -212,7 +207,7 @@ let player = new Sprite({
 })
 const battlePlayer = new Sprite({
     position: {
-        x: 1100,
+        x: 800,
         y: 350
     },
     image: playerLeft,
@@ -222,7 +217,7 @@ const battlePlayer = new Sprite({
 })
 let enemy = new Sprite({
     position: {
-        x: 500,
+        x: 400,
         y: 350
     },
     image: enemyImg,
@@ -244,13 +239,6 @@ let background = new Sprite({
         y: offset.y
     },
     image: backgroundImage
-})
-let flowers = new Sprite({
-    position: {
-        x: offset.x,
-        y: offset.y
-    },
-    image: flowersImg
 })
 const foreground = new Sprite({
     position: {
@@ -287,13 +275,6 @@ const winPane = new Sprite({
     },
     image: winScreenImage
 })
-// const menuPotion = new Sprite({
-//     position: {
-//         x: 50,
-//         y: 50
-//     },
-//     image: menuPotionImg
-// })
 const keys = {
     w: {
         pressed: false
@@ -317,20 +298,8 @@ const keys = {
         pressed: false
     }
 }
-let spd = 10
+let spd = 5
 
-
-function moveFlowers() {
-
-    setInterval(() => {
-        flowers.position.x -= 5
-        setTimeout(() => {
-            flowers.position.x += 5
-        }, 1250)
-    }, 2500)
-
-}
-moveFlowers()
 
 
 // Function for collision checking
@@ -353,10 +322,10 @@ function createCollisions(setCollisionMap) {
         createBoundaries()
     }
 }
-// const battleZonesMap = []
-// for (let i = 0; i < battleZonesData.length; i+= 80) {
-//     battleZonesMap.push(battleZonesData.slice(i, 80 + i))
-// }
+const battleZonesMap = []
+for (let i = 0; i < battleZonesData.length; i+= 80) {
+    battleZonesMap.push(battleZonesData.slice(i, 80 + i))
+}
 // Populates overworld collision maps
 let boundaries = []
 function createBoundaries() {
@@ -365,49 +334,45 @@ function createBoundaries() {
         row.forEach(((symbol, j) => {
             if (symbol === 59) {
                 boundaries.push(new Boundary({position: {
-                    x: j * Boundary.width + (0 + 30),
-                    y: i * Boundary.height + (0 + 85)
+                    x: j * Boundary.width + (offset.x + 30),
+                    y: i * Boundary.height + (offset.y + 85)
                 }}))
             }
         }))
     })
-    console.log(boundaries)
 }
 
 
 
 function checkCollisionChange() {
     if (!collisionsSet) {
-        console.log('peepee')
         switch (whichCollision) {
             case collisions :
                 createCollisions(collisions)
-                console.log('main map')
                 collisionsSet = true
                 break
 
             case secretForestCollisions :
                 createCollisions(secretForestCollisions)
-                console.log('forest map')
                 collisionsSet = true
                 break
         }
     }
 }
-// const battleZones = []
-// battleZonesMap.forEach((row, i) => {
-//     row.forEach(((symbol, j) => {
-//         if (symbol === 59) {
-//             battleZones.push(new Boundary({position: {
-//                 x: j * Boundary.width + offset.x,
-//                 y: i * Boundary.height + offset.y
-//             }}))
-//         }
-//     }))
-// })
+const battleZones = []
+battleZonesMap.forEach((row, i) => {
+    row.forEach(((symbol, j) => {
+        if (symbol === 59) {
+            battleZones.push(new BattleZone({position: {
+                x: j * BattleZone.width + offset.x,
+                y: i * BattleZone.height + offset.y
+            }}))
+        }
+    }))
+})
 
 // All elements that are moved
-let movables = [background, flowers, ...boundaries, foreground]
+let movables = [background, ...boundaries, foreground, ...battleZones]
 
 
 // Functions to create and read save files
@@ -437,44 +402,54 @@ const battle = {
 }
 function animate() {
 
+    //rudimentary map switching
     if ((offset.y > -355) && (offset.x >= -4185 && offset.x <= -4055)) {
         collisionsSet = false
         whichCollision = secretForestCollisions
 
-        checkCollisionChange()
-
         foregroundImage.src = './img/secret-forest-top.png'
         backgroundImage.src = './img/secret-forest.png'
-        offset.x = 0
-        offset.y = 0
+        offset.x = -2600
+        offset.y = -2750
         background.position.x = offset.x
         background.position.y = offset.y
         foreground.position.x = offset.x
         foreground.position.y = offset.y
 
+        checkCollisionChange()
+
         player.image = playerUp
     }
+    if ((offset.y < -2795) && (offset.x >= -2745 && offset.x <= -2455)) {
+        collisionsSet = false
+        whichCollision = collisions
+
+        foregroundImage.src = './img/map-test-top.png'
+        backgroundImage.src = './img/map5.png'
+        offset.x = -4125
+        offset.y = -360
+        background.position.x = offset.x
+        background.position.y = offset.y
+        foreground.position.x = offset.x
+        foreground.position.y = offset.y
+
+        checkCollisionChange()
+
+        player.image = playerDown
+    }
+    
 
     checkCollisionChange()
-    movables = [background, flowers, ...boundaries, foreground]
-
-
-
-    // if (keyFiredShift) {
-    //     spd = 10
-    // } else {
-    //     spd = 5
-    // }
+    movables = [background, ...boundaries, foreground, ...battleZones]
 
     const animationId = window.requestAnimationFrame(animate)
     background.draw()
-    flowers.draw()
     boundaries.forEach((boundary) => {
         boundary.draw()
     })
-    // battleZones.forEach((battleZone) => {
-    //     battleZone.draw()
-    // })
+    battleZones.forEach((battleZone) => {
+        battleZone.draw()
+    })
 
     player.draw() 
     foreground.draw()
@@ -486,35 +461,35 @@ function animate() {
     if (battle.initiated) return
 
     if (keys.w.pressed || keys.a.pressed || keys.s.pressed || keys.d.pressed) {
-        // for (let i = 0; i < battleZones.length; i++) {
-        //     const battleZone = battleZones[i]
-        //     const overlappingArea = 
-        //         (Math.min(
-        //             player.position.x + player.width, 
-        //             battleZone.position.x + battleZone.width
-        //         ) - 
-        //         Math.max(player.position.x, battleZone.position.x)) * 
-        //         (Math.min(
-        //             player.position.y + player.height, 
-        //             battleZone.position.y + battleZone.height
-        //         ) - 
-        //         Math.max(player.position.y, battleZone.position.y))
-        //     if (
-        //         rectangleCollision({
-        //             rectangle1: player,
-        //             rectangle2: battleZone
-        //         }) && 
-        //         overlappingArea > (player.width * player.height) / 2 &&
-        //         Math.random() < 0.02
-        //     ) {
+        for (let i = 0; i < battleZones.length; i++) {
+            const battleZone = battleZones[i]
+            const overlappingArea = 
+                (Math.min(
+                    player.position.x + player.width, 
+                    battleZone.position.x + battleZone.width
+                ) - 
+                Math.max(player.position.x, battleZone.position.x)) * 
+                (Math.min(
+                    player.position.y + player.height, 
+                    battleZone.position.y + battleZone.height
+                ) - 
+                Math.max(player.position.y, battleZone.position.y))
+            if (
+                rectangleCollision({
+                    rectangle1: player,
+                    rectangle2: battleZone
+                }) && 
+                overlappingArea > (player.width * player.height) / 2 &&
+                Math.random() < 0.02
+            ) {
 
-        //         window.cancelAnimationFrame(animationId)
-        //         battle.initiated = true
-        //         startBattle()
+                window.cancelAnimationFrame(animationId)
+                battle.initiated = true
+                startBattle()
                 
-        //         break
-        //     }
-        // }
+                break
+            }
+        }
     }
 
     if (menuOpen == true) {
@@ -522,7 +497,9 @@ function animate() {
         animateMenu()
     }
 
-    
+
+
+
     if (keys.w.pressed && pressedKeys[pressedKeys.length - 1] === 'w') {
         
         player.image = player.sprites.up
@@ -655,139 +632,6 @@ function animate() {
             })
         }
     }
-    // else if (keys.w.pressed && pressedKeys[pressedKeys.length - 1] === 'W') {
-        
-    //     player.image = player.sprites.up
-    //     player.moving = true
-    //     for (let i = 0; i < boundaries.length; i++) {
-    //         const boundary = boundaries[i]
-    //         if (
-    //             rectangleCollision({
-    //                 rectangle1: player,
-    //                 rectangle2: {
-    //                     ...boundary,
-    //                     position: {
-    //                         x: boundary.position.x,
-    //                         y: boundary.position.y + spd
-    //                     }
-    //                 }
-    //             })
-    //         ) {
-    //             moving = false
-    //             break
-    //         }
-        
-    //     }
-    //     if (moving) {
-    //         offset.y += spd
-    //         movables.forEach((movable) => {
-    //             movable.position.y += spd
-    //         })
-    //     }
-    // }
-    // else if (keys.a.pressed && pressedKeys[pressedKeys.length - 1] === 'A') {
-    //     player.image = player.sprites.left
-    //     player.moving = true
-    //     for (let i = 0; i < boundaries.length; i++) {
-    //         const boundary = boundaries[i]
-    //         if (
-    //             rectangleCollision({
-    //                 rectangle1: player,
-    //                 rectangle2: {
-    //                     ...boundary,
-    //                     position: {
-    //                         x: boundary.position.x + spd,
-    //                         y: boundary.position.y
-    //                     }
-    //                 }
-    //             })
-    //         ) {
-    //             moving = false
-    //             break
-    //         }
-    //     }
-    //     if (moving) {
-    //         offset.x += spd
-    //         movables.forEach((movable) => {
-    //             movable.position.x += spd
-    //         })
-    //     }
-    // }
-    // else if (keys.s.pressed && pressedKeys[pressedKeys.length - 1] === 'S') {
-    //     player.image = player.sprites.down
-    //     player.moving = true
-    //     for (let i = 0; i < boundaries.length; i++) {
-    //         const boundary = boundaries[i]
-    //         if (
-    //             rectangleCollision({
-    //                 rectangle1: player,
-    //                 rectangle2: {
-    //                     ...boundary,
-    //                     position: {
-    //                         x: boundary.position.x,
-    //                         y: boundary.position.y - spd
-    //                     }
-    //                 }
-    //             })
-    //         ) {
-    //             moving = false
-    //             break
-    //         }
-    //         if (
-    //             rectangleCollision({
-    //                 rectangle1: player,
-    //                 rectangle2: enemy
-    //             })
-    //         ) {
-    //             moving = false
-    //             break
-    //         }
-    //     }
-    //     if (moving) {
-    //         offset.y -= spd
-    //         movables.forEach((movable) => {
-    //             movable.position.y -= spd
-    //         })
-    //     }
-    // }
-    // else if (keys.d.pressed && pressedKeys[pressedKeys.length - 1] === 'D') {
-    //     player.image = player.sprites.right
-    //     player.moving = true
-    //     for (let i = 0; i < boundaries.length; i++) {
-    //         const boundary = boundaries[i]
-    //         if (
-    //             rectangleCollision({
-    //                 rectangle1: player,
-    //                 rectangle2: {
-    //                     ...boundary,
-    //                     position: {
-    //                         x: boundary.position.x - spd,
-    //                         y: boundary.position.y
-    //                     }
-    //                 }
-    //             })
-    //         ) {
-    //             moving = false
-    //             break
-    //         }
-    //         if (
-    //         rectangleCollision({
-    //             rectangle1: player,
-    //             rectangle2: enemy
-    //         })
-    //     ) {
-    //         moving = false
-    //         break
-    //     }
-    //     }
-    //     if (moving) {
-    //         offset.x -= spd
-    //         movables.forEach((movable) => {
-    //             movable.position.x -= spd
-    //         })
-    //     }
-    // }
-    else {}
 }
 
 
@@ -996,6 +840,15 @@ function populateItems() {
 // BATTLE LOOP CODE //
 //                  //
 //////////////////////
+
+const hpBarWidth = 75
+let battleWon
+let enemyChosen = false
+let levelChecked
+const battleMenuPane = document.querySelector('#battle-menu')
+let battleAnimationId
+let winScreenAnimationId
+
 function chooseEnemy() {
     const chosenEnemy = enemies[Math.floor(Math.random() * Object.keys(enemies).length)]
     enemy.name = chosenEnemy.name
@@ -1007,14 +860,56 @@ function chooseEnemy() {
     enemy.spd = chosenEnemy.spd
     enemy.money = chosenEnemy.money
 }
-function enemyAttack() {
-    if (Math.random() > criticalChance) {
-        character.stats.hp -= Math.round((((((2 * character.stats.lvl * 1) / 5) + 2) * (enemy.atk * (enemy.atk / character.stats.def))) / 50) + 2) * criticalBoost
+
+function playerAttack() {
+    let damage
+    if (Math.random() < criticalChance) {
+        damage = Math.round((((((2 * character.stats.lvl * 1) / 5) + 2) * (character.stats.power * (character.stats.atk / enemy.def))) / 50) + 2) * criticalBoost
+        enemy.health -= damage
+        setTimeout(() => {
+            battleMessage.innerHTML = 'Critical hit! You hit the ' + enemy.name + ' for ' + damage + ' points of damage!'
+            battleMessage.style.display = 'flex'
+        }, 1000)
     } else {
-        character.stats.hp -= Math.round((((((2 * character.stats.lvl * 1) / 5) + 2) * (enemy.atk * (enemy.atk / character.stats.def))) / 50) + 2)
+        damage = Math.round((((((2 * character.stats.lvl * 1) / 5) + 2) * (character.stats.power * (character.stats.atk / enemy.def))) / 50) + 2)
+        enemy.health -= damage
+        setTimeout(() => {
+            battleMessage.innerHTML = 'You hit the ' + enemy.name + ' for ' + damage + ' points of damage!'
+            battleMessage.style.display = 'flex'
+        }, 1000)
     }
+    document.querySelector('#enemy-health').style.width = ((enemy.health / enemy.maxHp) * 75) + 'px'
+    characterTurn = false
+    setTimeout(() => {
+        battleMessage.style.display = 'none'
+        enemyTurn = true
+    }, 3000)
+    
+}
+
+function enemyAttack() {
+    let damage
+    if (Math.random() <= criticalChance) {
+        damage = Math.round((((((2 * character.stats.lvl * 1) / 5) + 2) * (enemy.atk * (enemy.atk / character.stats.def))) / 50) + 2) * criticalBoost
+        character.stats.hp -= damage
+        setTimeout(() => {
+            battleMessage.innerHTML = 'Critical hit! The ' + enemy.name + ' attacks and deals ' + damage + ' points of damage!'
+            battleMessage.style.display = 'flex'
+        })
+    } else {
+        damage = Math.round((((((2 * character.stats.lvl * 1) / 5) + 2) * (enemy.atk * (enemy.atk / character.stats.def))) / 50) + 2)
+        character.stats.hp -= damage
+        setTimeout(() => {
+            battleMessage.innerHTML = 'The ' + enemy.name + ' attacks and deals ' + damage + ' points of damage!'
+            battleMessage.style.display = 'flex'
+        }, 1000)
+    }
+    
     enemyTurn = false
-    characterTurn = true
+    setTimeout(() => {
+        battleMessage.style.display = 'none'
+        characterTurn = true
+    }, 3000)
 }
 function checkLevelUp() {
     levelChecked = true
@@ -1037,15 +932,10 @@ function checkLevelUp() {
         animate()
     }
 }
-const hpBarWidth = 75
-let battleWon
-let enemyChosen = false
-let levelChecked
-const battleMenuPane = document.querySelector('#battle-menu')
-let battleAnimationId
-let winScreenAnimationId
+
 function startBattle() {
 
+    battleWon = false
     levelChecked = false
 
     if (enemyChosen === false) {
@@ -1230,14 +1120,7 @@ function startBattle() {
         if (keyFiredEnter) {
             keyFiredEnter = false
             if (battleMenuIndex === 0) {
-                if (Math.random() < criticalChance) {
-                    enemy.health -= Math.round((((((2 * character.stats.lvl * 1) / 5) + 2) * (character.stats.power * (character.stats.atk / enemy.def))) / 50) + 2) * criticalBoost
-                } else {
-                    enemy.health -= Math.round((((((2 * character.stats.lvl * 1) / 5) + 2) * (character.stats.power * (character.stats.atk / enemy.def))) / 50) + 2)
-                }
-                document.querySelector('#enemy-health').style.width = ((enemy.health / enemy.maxHp) * 75) + 'px'
-                characterTurn = false
-                enemyTurn = true
+                playerAttack()
             }
             else if (battleMenuIndex === 1) {
                 magicMenuOpen = true
@@ -1246,7 +1129,7 @@ function startBattle() {
 
             }
             else if (battleMenuIndex === 3) {
-                if (Math.random() > 0.25) {
+                if (Math.random() > 0.15) {
                     battleEnd = true
                 } else {
                     alert('failed to flee!')
@@ -1285,7 +1168,7 @@ function winScreen() {
 
 // Listening for specific keypresses for movement and enter/esc
 window.addEventListener('keypress', (e) => {
-    switch (e.key) {
+    switch (e.key.toLowerCase()) {
         case 'e' :
             if (menuOpen == false) {
                 menuOpen = true
@@ -1293,21 +1176,14 @@ window.addEventListener('keypress', (e) => {
                 menuOpen = false
             }
             break
-        // case 'E' :
-        //     if (menuOpen == false) {
-        //         menuOpen = true
-        //     } else if (menuOpen == true && !itemOpen) {
-        //         menuOpen = false
-        //     }
-        //     break
     }
 })
 window.addEventListener('keydown', (e) => {
-    switch (e.key) {
+    switch (e.key.toLowerCase()) {
         case 'w' :
             if (!keyFiredW) {
                 keyFiredW = true
-                pressedKeys.push(e.key)
+                pressedKeys.push(e.key.toLowerCase())
             }
             keys.w.pressed = true
             lastKey = 'w'
@@ -1317,7 +1193,7 @@ window.addEventListener('keydown', (e) => {
         case 'a' :
             if (!keyFiredA) {
                 keyFiredA = true
-                pressedKeys.push(e.key)
+                pressedKeys.push(e.key.toLowerCase())
             }
             keys.a.pressed = true
             lastKey = 'a'
@@ -1327,7 +1203,7 @@ window.addEventListener('keydown', (e) => {
         case 's' :
             if (!keyFiredS) {
                 keyFiredS = true
-                pressedKeys.push(e.key)
+                pressedKeys.push(e.key.toLowerCase())
             }
             keys.s.pressed = true
             lastKey = 's'
@@ -1337,61 +1213,16 @@ window.addEventListener('keydown', (e) => {
         case 'd' :
             if (!keyFiredD) {
                 keyFiredD = true
-                pressedKeys.push(e.key)
+                pressedKeys.push(e.key.toLowerCase())
             }
             keys.d.pressed = true
             lastKey = 'd'
             
             break
-        // case 'W' :
-        //     if (!keyFiredW) {
-        //         keyFiredW = true
-        //         pressedKeys.push(e.key)
-        //     }
-        //     keys.w.pressed = true
-        //     lastKey = 'w'
-            
-        //     break
 
-        // case 'A' :
-        //     if (!keyFiredA) {
-        //         keyFiredA = true
-        //         pressedKeys.push(e.key)
-        //     }
-        //     keys.a.pressed = true
-        //     lastKey = 'a'
-            
-        //     break
-
-        // case 'S' :
-        //     if (!keyFiredS) {
-        //         keyFiredS = true
-        //         pressedKeys.push(e.key)
-        //     }
-        //     keys.s.pressed = true
-        //     lastKey = 's'
-            
-        //     break
-
-        // case 'D' :
-        //     if (!keyFiredD) {
-        //         keyFiredD = true
-        //         pressedKeys.push(e.key)
-        //     }
-        //     keys.d.pressed = true
-        //     lastKey = 'd'
-            
-        //     break
-
-        case 'Enter' :
+        case 'enter' :
             if (!keyFiredEnter) {
                 keyFiredEnter = true
-            }
-            
-            break
-        case 'Shift' :
-            if (!keyFiredShift) {
-                keyFiredShift = true
             }
             
             break
@@ -1399,7 +1230,7 @@ window.addEventListener('keydown', (e) => {
 
 })
 window.addEventListener('keyup', (e) => {
-    switch (e.key) {
+    switch (e.key.toLowerCase()) {
         case 'w' :
             keyFiredW = false
             keys.w.pressed = false
@@ -1439,70 +1270,16 @@ window.addEventListener('keyup', (e) => {
                 }
             }
             break
-        // case 'W' :
-        //     keyFiredW = false
-        //     keys.w.pressed = false
-        //     for (let i = 0; i < pressedKeys.length; i++) {
-        //         if (pressedKeys[i] === 'W') {
-        //             pressedKeys.splice(i, 1)
-        //         }
-        //     }
-        //     break
 
-        // case 'A' :
-        //     keyFiredA = false
-        //     keys.a.pressed = false
-        //     for (let i = 0; i < pressedKeys.length; i++) {
-        //         if (pressedKeys[i] === 'A') {
-        //             pressedKeys.splice(i, 1)
-        //         }
-        //     }
-        //     break
-
-        // case 'S' :
-        //     keyFiredS = false
-        //     keys.s.pressed = false
-        //     for (let i = 0; i < pressedKeys.length; i++) {
-        //         if (pressedKeys[i] === 'S') {
-        //             pressedKeys.splice(i, 1)
-        //         }
-        //     }
-        //     break
-
-        // case 'D' :
-        //     keyFiredD = false
-        //     keys.d.pressed = false
-        //     for (let i = 0; i < pressedKeys.length; i++) {
-        //         if (pressedKeys[i] === 'D') {
-        //             pressedKeys.splice(i, 1)
-        //         }
-        //     }
-        //     break
-
-        case 'Enter' :
+        case 'enter' :
             if (keyFiredEnter) {
                 keyFiredEnter = false
-            }
-            
-            break
-
-        case 'Shift' :
-            if (keyFiredShift) {
-                keyFiredShift = false
             }
             
             break
     }
 
 })
-
-// window.addEventListener('keypress', (e) => {
-//     if (e.key === 'm') {
-        
-        
-        
-//     }
-// })
 
 
 // Run main game loop

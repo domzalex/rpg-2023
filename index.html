@@ -51,7 +51,17 @@
         position: absolute;
         top: -5px;
         left: -5px;
-        opacity: 0.5;
+    }
+    #battle-dialog {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        color: white;
     }
 </style>
 
@@ -136,8 +146,12 @@
             <h1 id="wind-magic" class="battle-menu-item">Wind</h1>
         </div>
 
+        <div id="battle-dialog">
+            <h1 id="battle-message" style="display: none;"></h1>
+        </div>
 
-        <div id="enemy-health" style="height: 15px; background-color: rgb(120,120,120); position: absolute; top: -450px; left: 498px;"></div>
+
+        <div id="enemy-health" style="height: 15px; background-color: rgb(123, 67, 139); position: absolute; top: -285px; left: 400px;"></div>
 
         
     </div>
