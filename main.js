@@ -32,15 +32,18 @@ let character = {
     },
     magic: {
         fire: {
-            power: 20,
+            name: 'fire',
+            power: 1.5,
             mp: 3
         },
         lightning: {
-            power: 25,
+            name: 'lightning',
+            power: 1.75,
             mp: 6
         },
         wind: {
-            power: 15,
+            name: 'wind',
+            power: 1.25,
             mp: 1
         }
     },
@@ -83,33 +86,36 @@ let character = {
 const enemies = {
     0: {
         name: 'goblin',
-        hp: 50,
+        hp: 25,
         atk: 10,
         def: 10,
         spd: 8,
         exp: 25,
-        money: 13
+        money: 13,
+        weakness: 'wind'
     },
     1: {
         name: 'troll',
-        hp: 100,
+        img: 'img/troll.png',
+        hp: 40,
         atk: 15,
         def: 15,
         spd: 5,
         exp: 35,
-        money: 20
+        money: 20,
+        weakness: 'lightning'
     },
     2: {
         name: 'spider',
-        hp: 30,
+        hp: 15,
         atk: 7,
         def: 5,
         spd: 20,
         exp: 20,
-        money: 15
+        money: 15,
+        weakness: 'fire'
     }
 }
-
 
 
 
@@ -141,8 +147,6 @@ let magicMenuIndex = 0
 let speedCheck = false
 let characterTurn = false
 let enemyTurn = false
-let criticalChance = 0.15
-let criticalBoost = 1.5
 
 let keyFiredW = false
 let keyFiredA = false
@@ -217,12 +221,12 @@ const battlePlayer = new Sprite({
 })
 let enemy = new Sprite({
     position: {
-        x: 400,
-        y: 350
+        x: 355,
+        y: 270
     },
     image: enemyImg,
     frames: {
-        max: 4
+        max: 1
     },
     name: '',
     maxHp: 20,
@@ -250,7 +254,7 @@ const foreground = new Sprite({
 const battleBackground = new Sprite({
     position: {
         x: -2315,
-        y: -2000
+        y: -2050
     },
     image: battleBg
 })
@@ -842,15 +846,26 @@ function populateItems() {
 //////////////////////
 
 const hpBarWidth = 75
+let magicType = undefined
+let baseDamage
+let magicMultiplier = 1
+let magicWeaknessBoost = 1
+let finalDamage
+let criticalChance = 0.15
+let criticalBoost = 1.5
 let battleWon
 let enemyChosen = false
 let levelChecked
-const battleMenuPane = document.querySelector('#battle-menu')
+const battleMenuPane = document.querySelector('#battle-pane')
+const battleMenu = document.querySelector('#battle-menu')
+const magicMenu = document.querySelector('#magic-menu')
 let battleAnimationId
 let winScreenAnimationId
 
 function chooseEnemy() {
-    const chosenEnemy = enemies[Math.floor(Math.random() * Object.keys(enemies).length)]
+    // const chosenEnemy = enemies[Math.floor(Math.random() * Object.keys(enemies).length)]
+    const chosenEnemy = enemies[1]
+    enemyImg.src = chosenEnemy.img
     enemy.name = chosenEnemy.name
     enemy.maxHp = chosenEnemy.hp
     enemy.health = chosenEnemy.hp
@@ -859,29 +874,47 @@ function chooseEnemy() {
     enemy.def = chosenEnemy.def
     enemy.spd = chosenEnemy.spd
     enemy.money = chosenEnemy.money
+    enemy.weakness = chosenEnemy.weakness
+}
+// function magicWeaknessCheck(type) {
+//     if (enemy.weakness === type) {
+
+//     }
+// }
+
+function damageCalc(magicType) {
+    if (magicType == undefined) {
+        magicMultiplier = 1
+    } else {
+        character.stats.mp -= magicType.mp
+        magicMultiplier = magicType.power
+        if (magicType.name == enemy.weakness) {
+            magicWeaknessBoost = 2
+        } else {
+            magicWeaknessBoost = 1
+        }
+    }
+    baseDamage = Math.round(((((((2 * character.stats.lvl * 1) / 5) + 2) * ((character.stats.power * magicMultiplier) * (character.stats.atk / enemy.def))) / 50) + 2) * magicWeaknessBoost)
+    battleMessage.innerHTML = 'You hit the ' + enemy.name + ' for ' + baseDamage + ' points of damage!'
+    finalDamage = baseDamage
+    if (Math.random() < criticalChance) {
+        finalDamage = Math.round(baseDamage * criticalBoost)
+        battleMessage.innerHTML = 'Critical hit! You hit the ' + enemy.name + ' for ' + finalDamage + ' points of damage!'
+    }
 }
 
-function playerAttack() {
-    let damage
-    if (Math.random() < criticalChance) {
-        damage = Math.round((((((2 * character.stats.lvl * 1) / 5) + 2) * (character.stats.power * (character.stats.atk / enemy.def))) / 50) + 2) * criticalBoost
-        enemy.health -= damage
-        setTimeout(() => {
-            battleMessage.innerHTML = 'Critical hit! You hit the ' + enemy.name + ' for ' + damage + ' points of damage!'
-            battleMessage.style.display = 'flex'
-        }, 1000)
-    } else {
-        damage = Math.round((((((2 * character.stats.lvl * 1) / 5) + 2) * (character.stats.power * (character.stats.atk / enemy.def))) / 50) + 2)
-        enemy.health -= damage
-        setTimeout(() => {
-            battleMessage.innerHTML = 'You hit the ' + enemy.name + ' for ' + damage + ' points of damage!'
-            battleMessage.style.display = 'flex'
-        }, 1000)
-    }
+function playerAttack(magicType) {
+    damageCalc(magicType)
+    enemy.health -= finalDamage
+    battleMenu.style.display = 'none'
+    setTimeout(() => {
+        battleMessage.style.display = 'flex'
+    }, 1000)
     document.querySelector('#enemy-health').style.width = ((enemy.health / enemy.maxHp) * 75) + 'px'
     characterTurn = false
     setTimeout(() => {
         battleMessage.style.display = 'none'
+        battleMenu.style.display = 'flex'
         enemyTurn = true
     }, 3000)
     
@@ -892,6 +925,7 @@ function enemyAttack() {
     if (Math.random() <= criticalChance) {
         damage = Math.round((((((2 * character.stats.lvl * 1) / 5) + 2) * (enemy.atk * (enemy.atk / character.stats.def))) / 50) + 2) * criticalBoost
         character.stats.hp -= damage
+        battleMenu.style.display = 'none'
         setTimeout(() => {
             battleMessage.innerHTML = 'Critical hit! The ' + enemy.name + ' attacks and deals ' + damage + ' points of damage!'
             battleMessage.style.display = 'flex'
@@ -899,6 +933,7 @@ function enemyAttack() {
     } else {
         damage = Math.round((((((2 * character.stats.lvl * 1) / 5) + 2) * (enemy.atk * (enemy.atk / character.stats.def))) / 50) + 2)
         character.stats.hp -= damage
+        battleMenu.style.display = 'none'
         setTimeout(() => {
             battleMessage.innerHTML = 'The ' + enemy.name + ' attacks and deals ' + damage + ' points of damage!'
             battleMessage.style.display = 'flex'
@@ -908,6 +943,7 @@ function enemyAttack() {
     enemyTurn = false
     setTimeout(() => {
         battleMessage.style.display = 'none'
+        battleMenu.style.display = 'flex'
         characterTurn = true
     }, 3000)
 }
@@ -954,6 +990,7 @@ function startBattle() {
     battleBackground.draw()
     enemy.draw()
     battlePlayer.draw()
+    battleMenuPane.style.display = 'flex'
 
     document.querySelector('#player-stats-battle').children[1].innerHTML = 'HP: ' + character.stats.hp
     document.querySelector('#player-stats-battle').children[2].innerHTML = 'MP: ' + character.stats.mp
@@ -969,7 +1006,7 @@ function startBattle() {
     }
 
     if (characterTurn) {
-        battleMenuPane.style.display = 'flex'
+        battleMenu.style.display = 'flex'
     } else if (enemyTurn && enemy.health > 0) {
         enemyAttack()
     }
@@ -985,21 +1022,23 @@ function startBattle() {
         if (battleWon) {
             character.stats.exp = character.stats.exp + enemy.exp
             character.money = character.money + enemy.money
-            document.querySelector('#battle-menu').style.display = 'none'
-            battleMenuPane.children[battleMenuIndex].className = 'battle-menu-item'
+            battleMenu.style.display = 'none'
+            battleMenuPane.style.display = 'none'
+            battleMenu.children[battleMenuIndex].className = 'battle-menu-item'
             battleMenuIndex = 0
-            battleMenuPane.children[battleMenuIndex].className = 'battle-menu-item battle-menu-hovered'
+            battleMenu.children[battleMenuIndex].className = 'battle-menu-item battle-menu-hovered'
             window.cancelAnimationFrame(battleAnimationId)
             winScreen()
             speedCheck = false
             battleEnd = false
             battle.initiated = false
         } else {
-            document.querySelector('#battle-menu').style.display = 'none'
+            battleMenu.style.display = 'none'
+            battleMenuPane.style.display = 'none'
             allowBattleMenuNav = false
-            battleMenuPane.children[battleMenuIndex].className = 'battle-menu-item'
+            battleMenu.children[battleMenuIndex].className = 'battle-menu-item'
             battleMenuIndex = 0
-            battleMenuPane.children[battleMenuIndex].className = 'battle-menu-item battle-menu-hovered'
+            battleMenu.children[battleMenuIndex].className = 'battle-menu-item battle-menu-hovered'
             window.cancelAnimationFrame(battleAnimationId)
             animate()
             speedCheck = false
@@ -1018,9 +1057,9 @@ function startBattle() {
                 keyFiredD = true
                 keys.d.pressed = false
                 if (battleMenuIndex < 3) {
-                    battleMenuPane.children[battleMenuIndex].className = 'battle-menu-item'
+                    battleMenu.children[battleMenuIndex].className = 'battle-menu-item'
                     battleMenuIndex += 1
-                    battleMenuPane.children[battleMenuIndex].className = 'battle-menu-item battle-menu-hovered'
+                    battleMenu.children[battleMenuIndex].className = 'battle-menu-item battle-menu-hovered'
                 }
             }
         }
@@ -1029,9 +1068,9 @@ function startBattle() {
                 keyFiredA = true
                 keys.a.pressed = false
                 if (battleMenuIndex > 0) {
-                    battleMenuPane.children[battleMenuIndex].className = 'battle-menu-item'
+                    battleMenu.children[battleMenuIndex].className = 'battle-menu-item'
                     battleMenuIndex -= 1
-                    battleMenuPane.children[battleMenuIndex].className = 'battle-menu-item battle-menu-hovered'
+                    battleMenu.children[battleMenuIndex].className = 'battle-menu-item battle-menu-hovered'
                 }
             }
         }
@@ -1073,45 +1112,10 @@ function startBattle() {
     if (magicMenuOpen) {
         if (keyFiredEnter) {
             keyFiredEnter = false
-            if (magicMenuIndex === 0 && character.stats.mp >= character.magic.fire.mp) {
-                character.stats.mp -= character.magic.fire.mp
-                if (Math.random() < criticalChance) {
-                    enemy.health -= Math.round((((((2 * character.stats.lvl * 1) / 5) + 2) * (character.magic.fire.power * (character.stats.atk / enemy.def))) / 50) + 2) * criticalBoost
-                } else {
-                    enemy.health -= Math.round((((((2 * character.stats.lvl * 1) / 5) + 2) * (character.magic.fire.power * (character.stats.atk / enemy.def))) / 50) + 2)
-                }
-                document.querySelector('#enemy-health').style.width = hpBarWidth + 'px'
-                document.querySelector('#magic-menu').style.display = 'none'
-                magicMenuOpen = false
-                characterTurn = false
-                enemyTurn = true
-            }
-            else if (magicMenuIndex === 1 && character.stats.mp >= character.magic.lightning.mp) {
-                character.stats.mp -= character.magic.lightning.mp
-                if (Math.random() < criticalChance) {
-                    enemy.health -= Math.round((((((2 * character.stats.lvl * 1) / 5) + 2) * (character.magic.lightning.power * (character.stats.atk / enemy.def))) / 50) + 2) * criticalBoost
-                } else {
-                    enemy.health -= Math.round((((((2 * character.stats.lvl * 1) / 5) + 2) * (character.magic.lightning.power * (character.stats.atk / enemy.def))) / 50) + 2)
-                }
-                document.querySelector('#enemy-health').style.width = ((enemy.health / enemy.maxHp) * 75) + 'px'
-                document.querySelector('#magic-menu').style.display = 'none'
-                magicMenuOpen = false
-                characterTurn = false
-                enemyTurn = true
-            }
-            else if (magicMenuIndex === 2 && character.stats.mp >= character.magic.wind.mp) {
-                character.stats.mp -= character.magic.wind.mp
-                if (Math.random() < criticalChance) {
-                    enemy.health -= Math.round((((((2 * character.stats.lvl * 1) / 5) + 2) * (character.magic.wind.power * (character.stats.atk / enemy.def))) / 50) + 2) * criticalBoost
-                } else {
-                    enemy.health -= Math.round((((((2 * character.stats.lvl * 1) / 5) + 2) * (character.magic.wind.power * (character.stats.atk / enemy.def))) / 50) + 2)
-                }
-                document.querySelector('#enemy-health').style.width = ((enemy.health / enemy.maxHp) * 75) + 'px'
-                document.querySelector('#magic-menu').style.display = 'none'
-                magicMenuOpen = false
-                characterTurn = false
-                enemyTurn = true
-            }
+            magicMenu.style.display = 'none'
+            magicMenuOpen = false
+            magicType = character.magic[Object.keys(character.magic)[magicMenuIndex]]
+            playerAttack(magicType)
         }
 
                     
@@ -1129,13 +1133,13 @@ function startBattle() {
 
             }
             else if (battleMenuIndex === 3) {
-                if (Math.random() > 0.15) {
+                if (Math.random() > 0.10) {
                     battleEnd = true
                 } else {
                     alert('failed to flee!')
-                    battleMenuPane.children[battleMenuIndex].className = 'battle-menu-item'
+                    battleMenu.children[battleMenuIndex].className = 'battle-menu-item'
                     battleMenuIndex = 0
-                    battleMenuPane.children[battleMenuIndex].className = 'battle-menu-item battle-menu-hovered'
+                    battleMenu.children[battleMenuIndex].className = 'battle-menu-item battle-menu-hovered'
                     characterTurn = false
                     enemyTurn = true
                 }
