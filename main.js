@@ -181,16 +181,20 @@ const battleBg = new Image()
 battleBg.src = './img/battle-bg.png'
 const enemyImg = new Image()
 enemyImg.src = './img/enemy.png'
+const fireAttack = new Image()
+fireAttack.src = './img/fire1.png'
+const explosionImg = new Image()
+explosionImg.src = './img/explosion1.png'
 
 // Player sprite images
 const playerDown = new Image()
-playerDown.src = './img/char-down.png'
+playerDown.src = './img/char-down1.png'
 const playerUp = new Image()
-playerUp.src = './img/char-up.png'
+playerUp.src = './img/char-up1.png'
 const playerLeft = new Image()
-playerLeft.src = './img/char-left.png'
+playerLeft.src = './img/char-left1.png'
 const playerRight = new Image()
-playerRight.src = './img/char-right.png'
+playerRight.src = './img/char-right1.png'
 
 // Sprite list
 let player = new Sprite({
@@ -200,7 +204,7 @@ let player = new Sprite({
     },
     image: playerDown,
     frames: {
-        max: 4
+        max: 8
     },
     sprites: {
         up: playerUp,
@@ -216,7 +220,7 @@ const battlePlayer = new Sprite({
     },
     image: playerLeft,
     frames: {
-        max: 4
+        max: 8
     }
 })
 let enemy = new Sprite({
@@ -279,6 +283,28 @@ const winPane = new Sprite({
     },
     image: winScreenImage
 })
+
+const fireAttackAnimation = new Sprite({
+    position: {
+        x: 750,
+        y: 350
+    },
+    image: fireAttack,
+    frames: {
+        max: 4
+    }
+})
+const explosion = new Sprite({
+    position: {
+        x: 355,
+        y: 270
+    },
+    image: explosionImg,
+    frames: {
+        max: 6
+    }
+})
+
 const keys = {
     w: {
         pressed: false
@@ -845,6 +871,8 @@ function populateItems() {
 //                  //
 //////////////////////
 
+let explosionToggle = false
+
 const hpBarWidth = 75
 let magicType = null
 let baseDamage
@@ -875,6 +903,15 @@ function chooseEnemy() {
     enemy.spd = chosenEnemy.spd
     enemy.money = chosenEnemy.money
     enemy.weakness = chosenEnemy.weakness
+
+    document.querySelector('#enemy-health').style.width = ((enemy.health / enemy.maxHp) * 75) + 'px'
+}
+
+function resetAttackAnimation() {
+    explosion.moving = false
+    explosion.frames.elapsed = 0
+    fireAttackAnimation.position.x = 750
+    fireAttackAnimation.position.y = 350
 }
 
 function damageCalc(magicType) {
@@ -904,20 +941,15 @@ function damageCalc(magicType) {
 }
 
 function playerAttack(magicType) {
+    resetAttackAnimation()
     damageCalc(magicType)
     enemy.health -= finalDamage
-    magicType = null
     magicMultiplier = 1
     magicWeaknessBoost = 1
     battleMenu.style.display = 'none'
     setTimeout(() => {
         battleMessage.style.display = 'flex'
     }, 1000)
-    if (enemy.health <= 0) {
-        document.querySelector('#enemy-health').style.width = '0px'
-    } else {
-        document.querySelector('#enemy-health').style.width = ((enemy.health / enemy.maxHp) * 75) + 'px'
-    }
     characterTurn = false
     setTimeout(() => {
         battleMessage.style.display = 'none'
@@ -967,6 +999,7 @@ function endBattle() {
 }
 
 function enemyAttack() {
+    magicType = null
     let damage
     if (Math.random() <= criticalChance) {
         damage = Math.round((((((2 * character.stats.lvl * 1) / 5) + 2) * (enemy.atk * (enemy.atk / character.stats.def))) / 50) + 2) * criticalBoost
@@ -1040,7 +1073,6 @@ function startBattle() {
 
     document.querySelector('#player-stats-battle').children[1].innerHTML = 'HP: ' + character.stats.hp
     document.querySelector('#player-stats-battle').children[2].innerHTML = 'MP: ' + character.stats.mp
-    document.querySelector('#enemy-health').style.width = ((enemy.health / enemy.maxHp) * 75) + 'px'
 
     if (!speedCheck) {
         speedCheck = true
@@ -1151,7 +1183,7 @@ function startBattle() {
             }
             else if (battleMenuIndex === 3) {
                 if (Math.random() > 0.10) {
-                    battleEnd = true
+                    endBattle()
                 } else {
                     alert('failed to flee!')
                     battleMenu.children[battleMenuIndex].className = 'battle-menu-item'
@@ -1163,6 +1195,28 @@ function startBattle() {
             }
         }
     }
+
+    if (magicType && magicType.name === 'fire' && explosion.moving == false) {
+        fireAttackAnimation.draw()
+        fireAttackAnimation.moving = true
+        if (fireAttackAnimation.position.x > 400) {
+            fireAttackAnimation.position.x -= 12
+            fireAttackAnimation.position.y -= 1
+        }
+    }
+    
+    if (fireAttackAnimation.position.x <= 400 && explosion.frames.elapsed < 60) {
+        explosion.draw()
+        explosion.moving = true
+        if (enemy.health <= 0) {
+            document.querySelector('#enemy-health').style.width = '0px'
+        } else {
+            console.log('enemyhealth')
+            document.querySelector('#enemy-health').style.width = ((enemy.health / enemy.maxHp) * 75) + 'px'
+        }
+    } 
+
+
 }
 function winScreen() {
     winScreenAnimationId = window.requestAnimationFrame(winScreen)
