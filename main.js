@@ -19,15 +19,15 @@ let character = {
     money: 100,
     stats: {
         lvl: 1,
-        maxHp: 100,
-        hp: 100,
+        maxHp: 50,
+        hp: 50,
         maxMp: 30,
         mp: 30,
         exp: 0,
         expToNext: 40,
-        atk: 20,
-        power: 10,
-        def: 15,
+        atk: 45,
+        power: 45,
+        def: 150,
         spd: 10
     },
     magic: {
@@ -258,13 +258,13 @@ const battleBackground = new Sprite({
     },
     image: battleBg
 })
-const menu = new Sprite({
-    position: {
-        x: 0,
-        y: 0
-    },
-    image: menuImage
-})
+// const menu = new Sprite({
+//     position: {
+//         x: 0,
+//         y: 0
+//     },
+//     image: menuImage
+// })
 const menuItems = new Sprite({
     position: {
         x: 0,
@@ -669,7 +669,7 @@ function animateMenu() {
     keyFiredD = false
 
     const menuAnimationId = window.requestAnimationFrame(animateMenu)
-    menu.draw()
+    // menu.draw()
     populateStats()
     document.querySelector('#menu').style.display = 'flex'
     document.querySelector('#player-stats').style.display = 'flex'
@@ -739,7 +739,7 @@ function animateMenuItems() {
 
     
     const menuItemAnimationId = window.requestAnimationFrame(animateMenuItems)
-    menuItems.draw()
+    
     populateStats()
     populateItems()
     itemsPane.style.display = 'flex'
@@ -846,7 +846,7 @@ function populateItems() {
 //////////////////////
 
 const hpBarWidth = 75
-let magicType = undefined
+let magicType = null
 let baseDamage
 let magicMultiplier = 1
 let magicWeaknessBoost = 1
@@ -876,23 +876,23 @@ function chooseEnemy() {
     enemy.money = chosenEnemy.money
     enemy.weakness = chosenEnemy.weakness
 }
-// function magicWeaknessCheck(type) {
-//     if (enemy.weakness === type) {
-
-//     }
-// }
 
 function damageCalc(magicType) {
-    if (magicType == undefined) {
+    if (magicType == null) {
         magicMultiplier = 1
     } else {
-        character.stats.mp -= magicType.mp
-        magicMultiplier = magicType.power
-        if (magicType.name == enemy.weakness) {
-            magicWeaknessBoost = 2
+        if (character.stats.mp >= magicType.mp) {
+            character.stats.mp -= magicType.mp
+            magicMultiplier = magicType.power
+            if (magicType.name == enemy.weakness) {
+                magicWeaknessBoost = 2
+            } else {
+                magicWeaknessBoost = 1
+            }
         } else {
-            magicWeaknessBoost = 1
+            alert('not enough MP')
         }
+        
     }
     baseDamage = Math.round(((((((2 * character.stats.lvl * 1) / 5) + 2) * ((character.stats.power * magicMultiplier) * (character.stats.atk / enemy.def))) / 50) + 2) * magicWeaknessBoost)
     battleMessage.innerHTML = 'You hit the ' + enemy.name + ' for ' + baseDamage + ' points of damage!'
@@ -906,18 +906,64 @@ function damageCalc(magicType) {
 function playerAttack(magicType) {
     damageCalc(magicType)
     enemy.health -= finalDamage
+    magicType = null
+    magicMultiplier = 1
+    magicWeaknessBoost = 1
     battleMenu.style.display = 'none'
     setTimeout(() => {
         battleMessage.style.display = 'flex'
     }, 1000)
-    document.querySelector('#enemy-health').style.width = ((enemy.health / enemy.maxHp) * 75) + 'px'
+    if (enemy.health <= 0) {
+        document.querySelector('#enemy-health').style.width = '0px'
+    } else {
+        document.querySelector('#enemy-health').style.width = ((enemy.health / enemy.maxHp) * 75) + 'px'
+    }
     characterTurn = false
     setTimeout(() => {
         battleMessage.style.display = 'none'
         battleMenu.style.display = 'flex'
-        enemyTurn = true
+        if (enemy.health <= 0) {
+            battleWon = true
+            endBattle()
+        } else {
+            enemyTurn = true
+        }
     }, 3000)
     
+}
+
+function endBattle() {
+    enemyChosen = false
+
+    if (battleWon) {
+        character.stats.exp = character.stats.exp + enemy.exp
+        character.money = character.money + enemy.money
+        battleMenu.style.display = 'none'
+        battleMenuPane.style.display = 'none'
+        battleMenu.children[battleMenuIndex].className = 'battle-menu-item'
+        battleMenuIndex = 0
+        battleMenu.children[battleMenuIndex].className = 'battle-menu-item battle-menu-hovered'
+        window.cancelAnimationFrame(battleAnimationId)
+        winScreen()
+        speedCheck = false
+        battleEnd = false
+        battle.initiated = false
+    } else {
+        battleMenu.style.display = 'none'
+        battleMenuPane.style.display = 'none'
+        allowBattleMenuNav = false
+        battleMenu.children[battleMenuIndex].className = 'battle-menu-item'
+        battleMenuIndex = 0
+        battleMenu.children[battleMenuIndex].className = 'battle-menu-item battle-menu-hovered'
+        window.cancelAnimationFrame(battleAnimationId)
+        animate()
+        speedCheck = false
+        battleEnd = false
+        battle.initiated = false
+        if (character.stats.hp <= 0) {
+            character.stats.hp = character.stats.maxHp
+        }
+    }
 }
 
 function enemyAttack() {
@@ -1010,47 +1056,7 @@ function startBattle() {
     } else if (enemyTurn && enemy.health > 0) {
         enemyAttack()
     }
-    if (enemy.health <= 0) {
-        battleEnd = true
-        battleWon = true
-    }
 
-    if (battleEnd) {
-
-        enemyChosen = false
-
-        if (battleWon) {
-            character.stats.exp = character.stats.exp + enemy.exp
-            character.money = character.money + enemy.money
-            battleMenu.style.display = 'none'
-            battleMenuPane.style.display = 'none'
-            battleMenu.children[battleMenuIndex].className = 'battle-menu-item'
-            battleMenuIndex = 0
-            battleMenu.children[battleMenuIndex].className = 'battle-menu-item battle-menu-hovered'
-            window.cancelAnimationFrame(battleAnimationId)
-            winScreen()
-            speedCheck = false
-            battleEnd = false
-            battle.initiated = false
-        } else {
-            battleMenu.style.display = 'none'
-            battleMenuPane.style.display = 'none'
-            allowBattleMenuNav = false
-            battleMenu.children[battleMenuIndex].className = 'battle-menu-item'
-            battleMenuIndex = 0
-            battleMenu.children[battleMenuIndex].className = 'battle-menu-item battle-menu-hovered'
-            window.cancelAnimationFrame(battleAnimationId)
-            animate()
-            speedCheck = false
-            battleEnd = false
-            battle.initiated = false
-            if (character.stats.hp <= 0) {
-                character.stats.hp = character.stats.maxHp
-            }
-        }
-
-        
-    }
     if (allowBattleMenuNav && !magicMenuOpen) {
         if (keys.d.pressed) {
             if (!keyFiredD) {
@@ -1111,11 +1117,22 @@ function startBattle() {
     
     if (magicMenuOpen) {
         if (keyFiredEnter) {
-            keyFiredEnter = false
-            magicMenu.style.display = 'none'
-            magicMenuOpen = false
+            
             magicType = character.magic[Object.keys(character.magic)[magicMenuIndex]]
-            playerAttack(magicType)
+
+            if (character.stats.mp >= magicType.mp) {
+                keyFiredEnter = false
+                magicMenu.style.display = 'none'
+                magicMenuOpen = false
+                playerAttack(magicType)
+            } else {
+                battleMessage.innerHTML = 'Not enough MP!'
+                battleMessage.style.display = 'flex'
+                setTimeout(() => {
+                    battleMessage.style.display = 'none'
+                }, 1500)
+            }
+            
         }
 
                     
